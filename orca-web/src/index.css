@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #121212;
+    color: #e5e2e1;
+    font-family: 'Manrope', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Hanken Grotesk', sans-serif;
+  }
+}
+
+/* Custom Liquid Glass Buttons */
+.btn-glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.btn-glass:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 255, 255, 0.08);
+}
+
+.btn-glass:active {
+  transform: translateY(1px);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 2px 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.btn-glass-primary {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+
+.btn-glass-primary:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 255, 255, 0.15);
+}
+
+/* Neomorphic Containers */
+.neo-card {
+  background: #181818;
+  box-shadow: -6px -6px 16px rgba(255, 255, 255, 0.015), 6px 6px 16px rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+}
+
+.neo-card:hover {
+  box-shadow: -8px -8px 20px rgba(255, 255, 255, 0.025), 8px 8px 22px rgba(0, 0, 0, 0.7);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.neo-inset {
+  background: #141313;
+  box-shadow: inset 3px 3px 8px rgba(0, 0, 0, 0.7), inset -3px -3px 8px rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #121212;
+}
+::-webkit-scrollbar-thumb {
+  background: #2b2a2a;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3939;
+}
