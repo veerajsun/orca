@@ -53,87 +53,79 @@ export const Movies: React.FC = () => {
         </p>
       </div>
 
-      {/* Filter Control Bar matching Screenshot */}
-      <div className="neo-card p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Search Field */}
-        <div className="relative w-full md:w-96">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search titles, directors, actors..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-[#141313] border border-white/10 rounded-full pl-10 pr-4 py-2 text-xs font-sans text-white placeholder-gray-500 focus:outline-none focus:border-white/30"
-          />
-        </div>
+      {/* Filter bar, grid & load-more only show once real catalog items exist */}
+      {!loading && moviesData.length > 0 && (
+        <>
+          <div className="neo-card p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* Search Field */}
+            <div className="relative w-full md:w-96">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search titles, directors, actors..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-[#141313] border border-white/10 rounded-full pl-10 pr-4 py-2 text-xs font-sans text-white placeholder-gray-500 focus:outline-none focus:border-white/30"
+              />
+            </div>
 
-        {/* Dropdown Filters */}
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
-          <select
-            value={selectedGenre}
-            onChange={(e) => setSelectedGenre(e.target.value)}
-            className="bg-[#141313] border border-white/10 rounded-full px-4 py-2 text-xs font-mono text-gray-300 focus:outline-none cursor-pointer"
-          >
-            <option value="All">Genre: All</option>
-            {genresList.filter(g => g !== 'All').map(g => (
-              <option key={g} value={g}>{g}</option>
+            {/* Dropdown Filters */}
+            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+              <select
+                value={selectedGenre}
+                onChange={(e) => setSelectedGenre(e.target.value)}
+                className="bg-[#141313] border border-white/10 rounded-full px-4 py-2 text-xs font-mono text-gray-300 focus:outline-none cursor-pointer"
+              >
+                <option value="All">Genre: All</option>
+                {genresList.filter(g => g !== 'All').map(g => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </select>
+
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="bg-[#141313] border border-white/10 rounded-full px-4 py-2 text-xs font-mono text-gray-300 focus:outline-none cursor-pointer"
+              >
+                <option value="All">Year: All</option>
+                {yearsList.filter(y => y !== 'All').map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+
+              <select
+                value={selectedRating}
+                onChange={(e) => setSelectedRating(e.target.value)}
+                className="bg-[#141313] border border-white/10 rounded-full px-4 py-2 text-xs font-mono text-gray-300 focus:outline-none cursor-pointer"
+              >
+                <option value="All">Rating: All</option>
+                <option value="4.5+">Rating: 4.5+</option>
+              </select>
+
+              <button className="p-2.5 rounded-full btn-glass text-gray-400 hover:text-white">
+                <SlidersHorizontal className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {filteredMovies.slice(0, visibleCount).map((movie) => (
+              <MovieCard key={movie.id} movie={movie} />
             ))}
-          </select>
+          </div>
 
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className="bg-[#141313] border border-white/10 rounded-full px-4 py-2 text-xs font-mono text-gray-300 focus:outline-none cursor-pointer"
-          >
-            <option value="All">Year: All</option>
-            {yearsList.filter(y => y !== 'All').map(y => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-
-          <select
-            value={selectedRating}
-            onChange={(e) => setSelectedRating(e.target.value)}
-            className="bg-[#141313] border border-white/10 rounded-full px-4 py-2 text-xs font-mono text-gray-300 focus:outline-none cursor-pointer"
-          >
-            <option value="All">Rating: All</option>
-            <option value="4.5+">Rating: 4.5+</option>
-          </select>
-
-          <button className="p-2.5 rounded-full btn-glass text-gray-400 hover:text-white">
-            <SlidersHorizontal className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Movies Grid */}
-      {loading ? (
-        <div className="text-center py-20 neo-card text-gray-400 font-mono text-sm">
-          Loading movies...
-        </div>
-      ) : filteredMovies.length === 0 ? (
-        <div className="text-center py-20 neo-card text-gray-400 font-mono text-sm">
-          No movies match your filter criteria.
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {filteredMovies.slice(0, visibleCount).map((movie) => (
-            <MovieCard key={movie.id} movie={movie} />
-          ))}
-        </div>
-      )}
-
-      {/* Load More Button */}
-      {visibleCount < filteredMovies.length && (
-        <div className="flex justify-center pt-8">
-          <button
-            onClick={() => setVisibleCount((prev) => prev + 4)}
-            className="px-8 py-3 rounded-full btn-glass text-xs font-mono tracking-widest text-gray-300 hover:text-white flex items-center space-x-2"
-          >
-            <RotateCw className="w-3.5 h-3.5" />
-            <span>LOAD MORE MOVIES</span>
-          </button>
-        </div>
+          {visibleCount < filteredMovies.length && (
+            <div className="flex justify-center pt-8">
+              <button
+                onClick={() => setVisibleCount((prev) => prev + 4)}
+                className="px-8 py-3 rounded-full btn-glass text-xs font-mono tracking-widest text-gray-300 hover:text-white flex items-center space-x-2"
+              >
+                <RotateCw className="w-3.5 h-3.5" />
+                <span>LOAD MORE MOVIES</span>
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {/* RSS Feed Section — configure the feed URL in src/config/feeds.ts */}

@@ -27,15 +27,7 @@ export const KDramaPage: React.FC = () => {
         </p>
       </div>
 
-      {loading ? (
-        <div className="text-center py-20 neo-card text-gray-400 font-mono text-sm">
-          Loading KDramas...
-        </div>
-      ) : kdramaData.length === 0 ? (
-        <div className="text-center py-20 neo-card text-gray-400 font-mono text-sm">
-          No KDramas added yet. Add some from the admin panel.
-        </div>
-      ) : (
+      {!loading && kdramaData.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {kdramaData.map((kdrama) => (
             <KDramaCard key={kdrama.id} kdrama={kdrama} />

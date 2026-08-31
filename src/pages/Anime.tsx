@@ -27,15 +27,7 @@ export const AnimePage: React.FC = () => {
         </p>
       </div>
 
-      {loading ? (
-        <div className="text-center py-20 neo-card text-gray-400 font-mono text-sm">
-          Loading anime...
-        </div>
-      ) : animeData.length === 0 ? (
-        <div className="text-center py-20 neo-card text-gray-400 font-mono text-sm">
-          No anime added yet. Add some from the admin panel.
-        </div>
-      ) : (
+      {!loading && animeData.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {animeData.map((anime) => (
             <AnimeCard key={anime.id} anime={anime} />

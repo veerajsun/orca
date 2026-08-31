@@ -50,21 +50,23 @@ export const PodcastPage: React.FC = () => {
         </div>
 
         {/* Filter Chips */}
-        <div className="flex items-center space-x-2 font-mono text-xs">
-          {['All', 'True Crime', 'Tech'].map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`px-4 py-2 rounded-full transition-all ${
-                activeCategory === cat
-                  ? 'btn-glass-primary text-white font-semibold'
-                  : 'btn-glass text-gray-400 hover:text-white'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+        {podcastsData.length > 0 && (
+          <div className="flex items-center space-x-2 font-mono text-xs">
+            {['All', 'True Crime', 'Tech'].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-4 py-2 rounded-full transition-all ${
+                  activeCategory === cat
+                    ? 'btn-glass-primary text-white font-semibold'
+                    : 'btn-glass text-gray-400 hover:text-white'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Featured Audio Player Banner */}
@@ -130,24 +132,20 @@ export const PodcastPage: React.FC = () => {
         </div>
       )}
 
-      {/* Podcast Grid */}
-      <section className="space-y-6">
-        <h2 className="text-xl font-bold text-white tracking-tight font-sans">
-          All Episodes
-        </h2>
+      {/* Podcast Grid — only shown once real episodes exist */}
+      {filteredPodcasts.length > 0 && (
+        <section className="space-y-6">
+          <h2 className="text-xl font-bold text-white tracking-tight font-sans">
+            All Episodes
+          </h2>
 
-        {filteredPodcasts.length === 0 ? (
-          <div className="text-center py-20 neo-card text-gray-400 font-mono text-sm">
-            No episodes added yet. Add some from the admin panel.
-          </div>
-        ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredPodcasts.map((podcast) => (
               <PodcastCard key={podcast.id} podcast={podcast} />
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
       {/* RSS Feed Section — configure the feed URL in src/config/feeds.ts */}
       <RssFeed category="podcast" title="Latest Podcast Episodes" />
