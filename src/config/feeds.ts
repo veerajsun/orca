@@ -6,7 +6,7 @@ export type FeedCategory = 'movies' | 'series' | 'anime' | 'kdrama' | 'podcast';
 export const CATEGORY_FEEDS: Record<FeedCategory, string> = {
   movies: '',   // e.g. 'https://example.com/movies/rss'
   series: '',   // e.g. 'https://example.com/series/rss'
-  anime: '',    // e.g. 'https://example.com/anime/rss'
+  anime: 'https://animecorner.me/feed/',
   kdrama: '',   // e.g. 'https://example.com/kdrama/rss'
   podcast: '',  // e.g. 'https://example.com/podcast/rss'
 };
