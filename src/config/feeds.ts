@@ -1,12 +1,15 @@
-// Add your RSS feed URLs here — one per category.
-// Leave a category as an empty string ('') to hide its RSS section on that page.
+// Add your RSS feed URLs here — you can add MULTIPLE feeds per category.
+// All feeds in a category get merged into one list, sorted by publish date.
+// Leave a category as an empty array ([]) to hide its RSS section on that page.
 
 export type FeedCategory = 'movies' | 'series' | 'anime' | 'kdrama' | 'podcast';
 
-export const CATEGORY_FEEDS: Record<FeedCategory, string> = {
-  movies: '',   // e.g. 'https://example.com/movies/rss'
-  series: '',   // e.g. 'https://example.com/series/rss'
-  anime: 'https://animecorner.me/feed/',
-  kdrama: '',   // e.g. 'https://example.com/kdrama/rss'
-  podcast: '',  // e.g. 'https://example.com/podcast/rss'
+export const CATEGORY_FEEDS: Record<FeedCategory, string[]> = {
+  movies: [],
+  series: [],
+  anime: [
+    'https://animecorner.me/feed/',
+  ],
+  kdrama: [],
+  podcast: [],
 };

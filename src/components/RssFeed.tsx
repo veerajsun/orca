@@ -10,6 +10,7 @@ interface RssItem {
   description: string;
   publishedAt: string;
   category: string;
+  sourceFeed?: string; // which feed title this came from, useful when merging multiple feeds
 }
 
 interface RssFeedProps {
@@ -18,30 +19,66 @@ interface RssFeedProps {
   limit?: number;
 }
 
-export const RssFeed: React.FC<RssFeedProps> = ({ category, title = 'Latest Updates', limit = 6 }) => {
-  const feedUrl = CATEGORY_FEEDS[category];
+export const RssFeed: React.FC<RssFeedProps> = ({ category, title = 'Latest Updates', limit = 9 }) => {
+  const feedUrls = CATEGORY_FEEDS[category] || [];
 
   const [items, setItems] = useState<RssItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!feedUrl) return; // No feed configured yet for this category — render nothing.
+    if (!feedUrls.length) return; // No feeds configured yet for this category — render nothing.
 
     let cancelled = false;
     setLoading(true);
     setError(null);
 
-    fetch(`/api/rss?url=${encodeURIComponent(feedUrl)}`)
-      .then((res) => {
-        if (!res.ok) throw new Error('Feed request failed');
-        return res.json();
-      })
-      .then((data) => {
-        if (!cancelled) setItems((data.items || []).slice(0, limit));
+    // Fetch every configured feed for this category in parallel, then merge & sort by date.
+    Promise.allSettled(
+      feedUrls.map((url) =>
+        fetch(`/api/rss?url=${encodeURIComponent(url)}`).then((res) => {
+          if (!res.ok) throw new Error('Feed request failed');
+          return res.json();
+        })
+      )
+    )
+      .then((results) => {
+        if (cancelled) return;
+
+        const merged: RssItem[] = [];
+        let anySucceeded = false;
+
+        results.forEach((result) => {
+          if (result.status === 'fulfilled') {
+            anySucceeded = true;
+            const feedItems: RssItem[] = (result.value.items || []).map((it: any) => ({
+              ...it,
+              sourceFeed: result.value.feedTitle || '',
+            }));
+            merged.push(...feedItems);
+          }
+        });
+
+        if (!anySucceeded && feedUrls.length > 0) {
+          setError('Could not load feeds right now.');
+          setItems([]);
+          return;
+        }
+
+        // De-duplicate (same story sometimes appears in multiple feeds) by link, then sort newest first.
+        const seen = new Set<string>();
+        const deduped = merged.filter((it) => {
+          if (seen.has(it.link)) return false;
+          seen.add(it.link);
+          return true;
+        });
+
+        deduped.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+
+        setItems(deduped.slice(0, limit));
       })
       .catch(() => {
-        if (!cancelled) setError('Could not load feed right now.');
+        if (!cancelled) setError('Could not load feeds right now.');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -50,10 +87,11 @@ export const RssFeed: React.FC<RssFeedProps> = ({ category, title = 'Latest Upda
     return () => {
       cancelled = true;
     };
-  }, [feedUrl, limit]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(feedUrls), limit]);
 
-  // No feed URL configured yet for this category — don't show an empty section.
-  if (!feedUrl) return null;
+  // No feeds configured yet for this category — don't show an empty section.
+  if (!feedUrls.length) return null;
 
   return (
     <section className="space-y-6">
@@ -85,7 +123,7 @@ export const RssFeed: React.FC<RssFeedProps> = ({ category, title = 'Latest Upda
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {items.map((item) => (
             <a
-              key={item.id}
+              key={item.id + item.link}
               href={item.link}
               target="_blank"
               rel="noopener noreferrer"
@@ -113,6 +151,7 @@ export const RssFeed: React.FC<RssFeedProps> = ({ category, title = 'Latest Upda
                     <div className="flex items-center space-x-2 text-[11px] font-mono text-gray-400">
                       <Clock className="w-3 h-3" />
                       <span>{new Date(item.publishedAt).toLocaleDateString()}</span>
+                      {item.sourceFeed && <span className="text-gray-600">• {item.sourceFeed}</span>}
                     </div>
                   )}
 
