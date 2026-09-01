@@ -6,7 +6,9 @@ export type FeedCategory = 'movies' | 'series' | 'anime' | 'kdrama' | 'podcast';
 
 export const CATEGORY_FEEDS: Record<FeedCategory, string[]> = {
   movies: [],
-  series: [],
+  series: [
+    'https://vodzilla.co/feed/',
+  ],
   anime: [
     'https://animecorner.me/feed/',
     'https://otakuusamagazine.com/anime/feed/',
