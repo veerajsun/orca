@@ -7,7 +7,7 @@ const parser = new Parser({
   },
 });
 
-// Simple in-memory cache so we don't hammer the source feed on every page view.
+// Simple in-memory cache so we don't hammer the source feeds on every page view.
 // (Resets whenever the serverless function cold-starts — that's fine for this use case.)
 const cache = new Map<string, { data: any; expires: number }>();
 const CACHE_MS = 10 * 60 * 1000; // 10 minutes
@@ -36,14 +36,12 @@ async function fetchOgImage(pageUrl: string): Promise<string> {
 
     if (!res.ok) return '';
 
-    // Only read the first ~50KB — the <head> with meta tags is always near the top,
-    // no need to download the whole page.
     const reader = res.body?.getReader();
     let html = '';
     if (reader) {
       const decoder = new TextDecoder();
       let bytesRead = 0;
-      while (bytesRead < 50_000) {
+      while (bytesRead < 150_000) {
         const { done, value } = await reader.read();
         if (done) break;
         html += decoder.decode(value, { stream: true });
@@ -62,58 +60,92 @@ async function fetchOgImage(pageUrl: string): Promise<string> {
       || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i);
     if (twitterMatch) return twitterMatch[1];
 
+    // Last resort: many WordPress sites (common among RSS sources) don't set
+    // og:image at all, but still have a normal featured image in the article
+    // body under /wp-content/uploads/. Grab the first one that isn't clearly
+    // a logo/icon/avatar.
+    const uploadMatches = [...html.matchAll(/https?:\/\/[^"'\s]+\/wp-content\/uploads\/[^"'\s]+?\.(?:jpg|jpeg|png|webp)/gi)];
+    for (const m of uploadMatches) {
+      const url = m[0];
+      if (!/logo|icon|favicon|avatar|badge|sprite/i.test(url)) {
+        return url;
+      }
+    }
+
     return '';
   } catch {
     return '';
   }
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const feedUrl = req.query.url as string;
+async function fetchOneFeed(feedUrl: string) {
+  const feed = await parser.parseURL(feedUrl);
+  return (feed.items || []).slice(0, 12).map((item, idx) => ({
+    id: item.guid || item.link || `${feedUrl}-${idx}`,
+    title: item.title || 'Untitled',
+    link: item.link || '',
+    thumbnail: extractImage(item),
+    description: (item.contentSnippet || item.summary || '').slice(0, 200),
+    publishedAt: item.pubDate || item.isoDate || '',
+    category: (item.categories && item.categories[0]) || feed.title || '',
+    sourceName: feed.title || '',
+  }));
+}
 
-  if (!feedUrl) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Accept either ?url=a&url=b (repeated param) or ?url=a,b (comma-separated)
+  const rawUrl = req.query.url;
+  let feedUrls: string[] = [];
+  if (Array.isArray(rawUrl)) {
+    feedUrls = rawUrl as string[];
+  } else if (typeof rawUrl === 'string') {
+    feedUrls = rawUrl.split(',').map((u) => u.trim()).filter(Boolean);
+  }
+
+  if (feedUrls.length === 0) {
     res.status(400).json({ error: 'Missing "url" query parameter' });
     return;
   }
 
-  const cached = cache.get(feedUrl);
+  const cacheKey = feedUrls.slice().sort().join(',');
+  const cached = cache.get(cacheKey);
   if (cached && cached.expires > Date.now()) {
     res.status(200).json(cached.data);
     return;
   }
 
   try {
-    const feed = await parser.parseURL(feedUrl);
-    const rawItems = (feed.items || []).slice(0, 12);
+    // Fetch all feeds in parallel; a single failing feed shouldn't break the others
+    const results = await Promise.allSettled(feedUrls.map(fetchOneFeed));
+    let items = results
+      .filter((r): r is PromiseFulfilledResult<any[]> => r.status === 'fulfilled')
+      .flatMap((r) => r.value);
 
-    // First pass: pull whatever image info is already in the feed itself.
-    const partialItems = rawItems.map((item, idx) => ({
-      id: item.guid || item.link || `${idx}`,
-      title: item.title || 'Untitled',
-      link: item.link || '',
-      thumbnail: extractImage(item),
-      description: (item.contentSnippet || item.summary || '').slice(0, 200),
-      publishedAt: item.pubDate || item.isoDate || '',
-      category: (item.categories && item.categories[0]) || feed.title || '',
-    }));
+    // Merge duplicates (rare, but possible if two feeds share an item), sort newest first
+    const seen = new Set<string>();
+    items = items.filter((item) => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+    items.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+    items = items.slice(0, 12);
 
-    // Second pass: for items with no image, fetch the article page's og:image.
-    // Runs in parallel, capped at 5s each, so a slow site can't stall the whole request.
-    const items = await Promise.all(
-      partialItems.map(async (item) => {
+    // Fill in missing images from the article page's og:image, in parallel
+    items = await Promise.all(
+      items.map(async (item) => {
         if (item.thumbnail || !item.link) return item;
         const ogImage = await fetchOgImage(item.link);
         return { ...item, thumbnail: ogImage };
       })
     );
 
-    const payload = { feedTitle: feed.title || '', items };
-
-    cache.set(feedUrl, { data: payload, expires: Date.now() + CACHE_MS });
+    const payload = { items };
+    cache.set(cacheKey, { data: payload, expires: Date.now() + CACHE_MS });
 
     res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=1200');
     res.status(200).json(payload);
   } catch (err) {
-    res.status(502).json({ error: 'Failed to fetch or parse RSS feed', details: String(err) });
+    res.status(502).json({ error: 'Failed to fetch or parse RSS feed(s)', details: String(err) });
   }
 }
