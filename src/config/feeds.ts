@@ -9,6 +9,7 @@ export const CATEGORY_FEEDS: Record<FeedCategory, string[]> = {
   series: [],
   anime: [
     'https://animecorner.me/feed/',
+    'https://otakuusamagazine.com/anime/feed/',
   ],
   kdrama: [],
   podcast: [],
