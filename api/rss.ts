@@ -62,15 +62,17 @@ async function fetchOgImage(pageUrl: string): Promise<string> {
 
     // Last resort: many WordPress sites (common among RSS sources) don't set
     // og:image at all, but still have a normal featured image in the article
-    // body under /wp-content/uploads/. Grab the first one that isn't clearly
-    // a logo/icon/avatar.
-    const uploadMatches = [...html.matchAll(/https?:\/\/[^"'\s]+\/wp-content\/uploads\/[^"'\s]+?\.(?:jpg|jpeg|png|webp)/gi)];
-    for (const m of uploadMatches) {
-      const url = m[0];
-      if (!/logo|icon|favicon|avatar|badge|sprite/i.test(url)) {
-        return url;
-      }
-    }
+    // body under /wp-content/uploads/. WordPress auto-generates resized
+    // filenames like "-700x467.jpg" for real content images — sidebar logos,
+    // channel icons, and nav graphics almost never have that suffix, so
+    // prefer a resize-suffixed match first before falling back to any upload.
+    const uploadMatches = [...html.matchAll(/https?:\/\/[^"'\s]+\/wp-content\/uploads\/[^"'\s]+?\.(?:jpg|jpeg|png|webp)/gi)]
+      .map((m) => m[0])
+      .filter((url) => !/logo|icon|favicon|avatar|badge|sprite/i.test(url));
+
+    const resized = uploadMatches.find((url) => /-\d{2,4}x\d{2,4}\.(?:jpg|jpeg|png|webp)$/i.test(url));
+    if (resized) return resized;
+    if (uploadMatches.length) return uploadMatches[0];
 
     return '';
   } catch {
