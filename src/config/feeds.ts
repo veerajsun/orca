@@ -5,14 +5,21 @@
 export type FeedCategory = 'movies' | 'series' | 'anime' | 'kdrama' | 'podcast';
 
 export const CATEGORY_FEEDS: Record<FeedCategory, string[]> = {
-  movies: [],
+  movies: [
+    'https://screenrant.com/feed/',
+  ],
   series: [
     'https://vodzilla.co/feed/',
+    'https://www.whats-on-netflix.com/news/feed/',
   ],
   anime: [
     'https://animecorner.me/feed/',
     'https://otakuusamagazine.com/anime/feed/',
   ],
-  kdrama: [],
-  podcast: [],
+  kdrama: [
+    'https://www.soompi.com/feed',
+  ],
+  podcast: [
+    'https://podnews.net/latest',
+  ],
 };
